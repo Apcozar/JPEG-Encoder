@@ -24,53 +24,58 @@ function [bitStr] = jpegHuffmanEncodeBlock(block, type)
 
 [huff_ldc, huff_lac, huff_cdc, huff_cac] = huffman_codes();
 
-count = 0;
+count = 1;
 
 value = huffmanDecimalToBinary(block(1));
+bitStr = {};
 
-not0 = 0;
+size = length(value);
+
+lastNonZero = 0;
+aux = length(block);
+
+if (type == 'L')
+    bitStr(1) = strcat(huff_ldc(size+1),value);
+    EOB = {'1010'};
+    ZRL = {'11111111001'};
+elseif (type == 'C')
+    bitStr(1) = strcat(huff_cdc(size+1),value);
+    EOB = {'00'};
+    ZRL = {'1111111010'};
+end
 
 for i = 1:64
     if (block(i) ~= 0)
-        not0 = not0 + 1;
+        lastNonZero = i;
     end
 end
 
-if (type == 'L')
-    size = length(value);
-    bitStr(1,1) = size; bitStr(1,2) = value;
+for i = 2:lastNonZero
     
-    for i = 2:64
-        if (block(i) == 0)
-            count = count + 1;
-            continue;
+     if (block(i) == 0)
+        count = count + 1;
+        if (count == 16 && lastNonZero > i) 
+            bitStr(end+1) = ZRL;
+            count = 1;
         end
-        
-        value = huffmanDecimalToBinary(block(i));
-        run = count;
-        size = length(value);
-        
-        count = 0;
-        bitStr(1,end+1) = strcat(huff_lac(run+1, size), value);
+        continue;
+    end
+     
+    value = huffmanDecimalToBinary(block(i));
+    run = count;
+    size = length(value);
+
+    count = 1;
+
+    if (type == 'L')
+        bitStr(end+1) = strcat(huff_lac(run, size), value);
+    elseif (type == 'C')
+        bitStr(end+1) = strcat(huff_cac(run, size), value);
     end
 
-elseif (type == 'C')
-    size = find(huff_cdc == length(value));
-    bitStr(1,1) = size; bitStr(1,2) = value;
-
-    for i = 2:64
-        if (block(i) == 0)
-            count = count + 1;
-            continue;
-        end
-        
-        value = huffmanDecimalToBinary(block(i));
-        run = count;
-        size = length(value);
-        
-        count = 0;
-        bitStr(:,end+1) = strcat(huff_cac(run+1, size), value);
-    end
+    aux = aux - 1;
 end
+
+bitStr(end+1) = EOB;
 
 end
