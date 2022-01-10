@@ -32,19 +32,22 @@ bitStr = {};
 size = length(value);
 
 lastNonZero = 0;
-aux = length(block);
+
+if (size ~= 0)
+    size = size + 1;
+end 
 
 if (type == 'L')
-    bitStr(1) = strcat(huff_ldc(size+1),value);
+    bitStr(1) = strcat(huff_ldc(1,size),value);
     EOB = {'1010'};
     ZRL = {'11111111001'};
 elseif (type == 'C')
-    bitStr(1) = strcat(huff_cdc(size+1),value);
+    bitStr(1) = strcat(huff_cdc(1,size),value);
     EOB = {'00'};
     ZRL = {'1111111010'};
 end
 
-for i = 1:64
+for i = 1:length(block)
     if (block(i) ~= 0)
         lastNonZero = i;
     end
@@ -73,7 +76,6 @@ for i = 2:lastNonZero
         bitStr(end+1) = strcat(huff_cac(run, size), value);
     end
 
-    aux = aux - 1;
 end
 
 bitStr(end+1) = EOB;
